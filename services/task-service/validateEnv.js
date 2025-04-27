@@ -2,7 +2,7 @@ const Joi = require('joi');
 
 const envSchema = Joi.object({
   MONGODB_URI: Joi.string().uri().required(),
-  PORT: Joi.number().default(3000),
+  PORT: Joi.number().required(),
   NODE_ENV: Joi.string().valid('dev', 'prod').default('dev')
 }).unknown();
 
