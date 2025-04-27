@@ -1,28 +1,30 @@
-// Load environment variables
-require('dotenv').config();
+if (process.env.NODE_ENV !== 'prod') {
+  require('dotenv').config();
+}
 
 const express = require('express');
 const mongoose = require('mongoose');
 const Task = require('./task.model');
+const validateEnv = require('./validateEnv');
+
+validateEnv();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Middleware
 app.use(express.json());
 
-// MongoDB connection
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
 .then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+.catch(err => {
+  console.error('MongoDB connection error:', err);
+  process.exit(1);
+});
 
-// Routes
-
-// Get all tasks
 app.get('/tasks', async (req, res) => {
   try {
     const tasks = await Task.find();
@@ -32,7 +34,6 @@ app.get('/tasks', async (req, res) => {
   }
 });
 
-// Get a specific task by ID
 app.get('/tasks/:id', async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -43,7 +44,6 @@ app.get('/tasks/:id', async (req, res) => {
   }
 });
 
-// Create a new task
 app.post('/tasks', async (req, res) => {
   try {
     const { title, description } = req.body;
@@ -58,7 +58,6 @@ app.post('/tasks', async (req, res) => {
   }
 });
 
-// Update an existing task
 app.put('/tasks/:id', async (req, res) => {
   try {
     const { title, description, done } = req.body;
@@ -76,7 +75,6 @@ app.put('/tasks/:id', async (req, res) => {
   }
 });
 
-// Delete a task
 app.delete('/tasks/:id', async (req, res) => {
   try {
     const task = await Task.findByIdAndDelete(req.params.id);
@@ -87,7 +85,6 @@ app.delete('/tasks/:id', async (req, res) => {
   }
 });
 
-// Start the server
 app.listen(PORT, () => {
   console.log(`Task service running at http://localhost:${PORT}`);
 });
