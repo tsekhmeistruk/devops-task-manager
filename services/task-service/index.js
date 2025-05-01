@@ -6,7 +6,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Task = require('./task.model');
 const validateEnv = require('./validateEnv');
-const { body, validationResult } = require('express-validator');
+const { body, param, validationResult } = require('express-validator');
 
 validateEnv();
 
@@ -35,15 +35,23 @@ app.get('/tasks', async (req, res) => {
   }
 });
 
-app.get('/tasks/:id', async (req, res) => {
-  try {
-    const task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ message: 'Task not found' });
-    res.json(task);
-  } catch (err) {
-    res.status(400).json({ message: 'Invalid Task ID' });
+app.get('/tasks/:id',
+  param('id').isMongoId().withMessage('Invalid task ID'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const task = await Task.findById(req.params.id);
+      if (!task) return res.status(404).json({ message: 'Task not found' });
+      res.json(task);
+    } catch (err) {
+      res.status(400).json({ message: 'Invalid Task ID' });
+    }
   }
-});
+);
 
 app.post('/tasks',
   [
@@ -67,31 +75,59 @@ app.post('/tasks',
   }
 );
 
-app.put('/tasks/:id', async (req, res) => {
-  try {
-    const { title, description, done } = req.body;
-    const task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ message: 'Task not found' });
+app.put('/tasks/:id',
+  [
+    param('id').isMongoId().withMessage('Invalid task ID'),
+    body('title').optional().isString().withMessage('Title must be a string'),
+    body('description').optional().isString().withMessage('Description must be a string'),
+    body('done').optional().isBoolean().withMessage('Done must be true or false')
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-    if (title !== undefined) task.title = title;
-    if (description !== undefined) task.description = description;
-    if (done !== undefined) task.done = done;
+    try {
+      const { title, description, done } = req.body;
+      const task = await Task.findById(req.params.id);
+      if (!task) return res.status(404).json({ message: 'Task not found' });
 
-    await task.save();
-    res.json(task);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+      if (title !== undefined) task.title = title;
+      if (description !== undefined) task.description = description;
+      if (done !== undefined) task.done = done;
+
+      await task.save();
+      res.json(task);
+    } catch (err) {
+      res.status(400).json({ message: err.message });
+    }
   }
-});
+);
 
-app.delete('/tasks/:id', async (req, res) => {
-  try {
-    const task = await Task.findByIdAndDelete(req.params.id);
-    if (!task) return res.status(404).json({ message: 'Task not found' });
-    res.status(204).send();
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+app.delete('/tasks/:id',
+  [
+    param('id').isMongoId().withMessage('Invalid task ID')
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const task = await Task.findByIdAndDelete(req.params.id);
+      if (!task) return res.status(404).json({ message: 'Task not found' });
+      res.status(204).send();
+    } catch (err) {
+      res.status(400).json({ message: err.message });
+    }
   }
+);
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Internal Server Error' });
 });
 
 app.listen(PORT, () => {
