@@ -6,6 +6,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Task = require('./task.model');
 const validateEnv = require('./validateEnv');
+const { body, validationResult } = require('express-validator');
 
 validateEnv();
 
@@ -44,19 +45,27 @@ app.get('/tasks/:id', async (req, res) => {
   }
 });
 
-app.post('/tasks', async (req, res) => {
-  try {
-    const { title, description } = req.body;
-    if (!title) {
-      return res.status(400).json({ message: 'Title is required' });
+app.post('/tasks',
+  [
+    body('title').notEmpty().withMessage('Title is required'),
+    body('description').optional().isString()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-    const task = new Task({ title, description });
-    await task.save();
-    res.status(201).json(task);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+
+    try {
+      const { title, description } = req.body;
+      const task = new Task({ title, description });
+      await task.save();
+      res.status(201).json(task);
+    } catch (err) {
+      res.status(400).json({ message: err.message });
+    }
   }
-});
+);
 
 app.put('/tasks/:id', async (req, res) => {
   try {
