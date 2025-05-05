@@ -131,5 +131,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Task service running at http://localhost:${PORT}`);
+  console.log(`Task service running at port: ${PORT}`);
 });
