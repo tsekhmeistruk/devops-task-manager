@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const Task = require('./task.model');
 const validateEnv = require('./validateEnv');
 const { body, param, validationResult } = require('express-validator');
+const helmet = require('helmet');
 
 validateEnv();
 
@@ -14,7 +15,26 @@ const app = express();
 const PORT = process.env.PORT;
 const MONGODB_URI = process.env.MONGODB_URI;
 
+app.disable('x-powered-by');
+app.use(helmet());
 app.use(express.json());
+
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; frame-ancestors 'none'; script-src 'self'"
+  );
+  res.setHeader(
+    'Permissions-Policy',
+    'geolocation=(), microphone=(), camera=()'
+  );
+  next();
+});
+
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  next();
+});
 
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
