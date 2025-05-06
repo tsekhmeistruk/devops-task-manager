@@ -25,6 +25,7 @@ jobs:
         run: |
           echo "PORT=3000" >> .env
           echo "MONGODB_URI=mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@mongodb:27017/testdb?authSource=admin" >> .env
+          echo "MONGODB_URI_LOCAL=mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@localhost:27017/testdb?authSource=admin" >> .env
           echo "MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_USER }}" >> .env
           echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_PASS }}" >> .env
           echo "E2E_BASE_URL=http://localhost:3000" >> .env
