@@ -1,0 +1,45 @@
+name: Docker Compose CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Compose
+        run: |
+          docker compose version
+
+      - name: Create .env file from secrets
+        run: |
+          echo "PORT=3000" >> .env
+          echo "MONGODB_URI=mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@mongodb:27017/testdb?authSource=admin" >> .env
+          echo "MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_USER }}" >> .env
+          echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_PASS }}" >> .env
+          echo "E2E_BASE_URL=http://localhost:3000" >> .env
+
+      - name: Build and start services
+        run: docker compose up -d --build
+
+      - name: Wait for services
+        run: |
+          for i in {1..10}; do
+            curl -sf http://localhost:3000/tasks && break || sleep 3
+          done
+
+      - name: Run tests in container
+        run: docker compose exec task-service npm test
+
+      - name: Tear down
+        run: docker compose down -v
