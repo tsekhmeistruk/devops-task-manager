@@ -10,6 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Compose
+        run: |
+          docker compose version
+
+      - name: Create .env file from secrets
+        run: |
+          echo "PORT=3000" >> .env
+          echo "MONGODB_URI=mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@mongodb:27017/testdb?authSource=admin" >> .env
+          echo "MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_USER }}" >> .env
+          echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_PASS }}" >> .env
+          echo "E2E_BASE_URL=http://localhost:3000" >> .env
+          
       - name: Start target with Docker Compose
         run: |
           docker compose up -d --build
