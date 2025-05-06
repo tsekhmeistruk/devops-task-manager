@@ -39,7 +39,8 @@ jobs:
         uses: zaproxy/action-baseline@v0.10.0
         with:
           target: 'http://localhost:3000'
-          docker_name: 'ghcr.io/zaproxy/zap-baseline'
+          fail_action: false
+          artifact_name: zap_scan
 
       - name: Tear down services
         run: docker compose down -v
