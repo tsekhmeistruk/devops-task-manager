@@ -40,8 +40,13 @@ jobs:
         with:
           target: 'http://localhost:3000'
           fail_action: false
-          artifact_name: zap_scan
-          allow_issue_writing: false
+          artifact_name: zap_scan          
+          
+      - name: Upload ZAP HTML Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: zap-report
+          path: report_html.html
 
       - name: Tear down services
         run: docker compose down -v
