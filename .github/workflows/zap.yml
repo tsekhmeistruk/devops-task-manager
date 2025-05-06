@@ -41,6 +41,7 @@ jobs:
           target: 'http://localhost:3000'
           fail_action: false
           artifact_name: zap_scan
+          allow_issue_writing: false
 
       - name: Tear down services
         run: docker compose down -v
