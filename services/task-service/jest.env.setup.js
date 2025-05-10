@@ -6,5 +6,5 @@ if (process.env.NODE_ENV !== 'prod') {
   });
 }
 
-global.MONGODB_URI = process.env.MONGODB_URI_LOCAL;
+global.MONGODB_URI = process.env.MONGODB_URI;
 global.BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
