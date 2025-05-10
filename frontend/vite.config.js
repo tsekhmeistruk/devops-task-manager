@@ -6,10 +6,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/tasks': {
-        target: 'http://localhost:3000',
+        target: process.env.VITE_API_BASE_URL || 'http://localhost:3000',
         changeOrigin: true,
-        secure: false,
       },
     },
+    host: '0.0.0.0',
+    port: 5173,
   },
 })
