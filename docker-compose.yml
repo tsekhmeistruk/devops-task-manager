@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   mongodb:
     image: mongo
@@ -21,6 +23,22 @@ services:
       - PORT=${PORT}
     depends_on:
       - mongodb
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://task-service:3000
+    depends_on:
+      - task-service
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    working_dir: /app
 
 volumes:
   mongo-data:
