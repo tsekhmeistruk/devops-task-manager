@@ -10,9 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Start target with Docker Compose
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
         run: |
-          docker compose up -d --build
+          docker compose version
+
+      - name: Create .env file from secrets
+        run: |
+          echo "PORT=3000" >> .env
+          echo "MONGODB_URI=mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@localhost:27017/testdb?authSource=admin" >> .env
+          echo "MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_USER }}" >> .env
+          echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_PASS }}" >> .env
+
+      - name: Start target with Docker Compose
+        run: docker compose up -d --build
 
       - name: Wait for target app
         run: |
@@ -20,11 +33,18 @@ jobs:
             curl -sf http://localhost:3000/tasks && break || sleep 3
           done
 
-      - name: Run OWASP ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.10.0
+      - name: Run ZAP Baseline Scan with Docker
+        run: |
+          docker run --network host \
+            -v $(pwd):/zap/wrk/:rw \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://localhost:3000 -r report_html.html
+
+      - name: Upload ZAP HTML Report
+        uses: actions/upload-artifact@v3
         with:
-          target: 'http://localhost:3000'
-          docker_name: 'ghcr.io/zaproxy/zap-baseline'
+          name: zap-report
+          path: report_html.html
 
       - name: Tear down services
         run: docker compose down -v

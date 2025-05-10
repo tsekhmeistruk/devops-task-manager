@@ -5,3 +5,7 @@ node_modules
 # Editor swap files
 *.swp
 *.swo
+
+#zap artifacts
+report.html
+zap.yaml
