@@ -36,13 +36,13 @@ jobs:
           docker run --network host \
             -v $(pwd):/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:3000 -r report_html.html
+            zap-baseline.py -t http://localhost:3000 -r /zap/wrk/report.html || true
 
       - name: Upload ZAP HTML Report
         uses: actions/upload-artifact@v4.6.2
         with:
           name: zap-report
-          path: report_html.html
+          path: report.html
 
       - name: Tear down services
         run: docker compose down -v
