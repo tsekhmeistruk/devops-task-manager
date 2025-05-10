@@ -186,6 +186,10 @@ app.get('/sitemap.xml', async (req, res) => {
   res.send(sitemap);
 });
 
+app.get('/', (req, res) => {
+  res.send('Task API is running');
+});
+
 // ------------------------
 // 404 Handler
 // ------------------------

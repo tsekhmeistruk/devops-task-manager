@@ -27,22 +27,25 @@ jobs:
 
       - name: Wait for target app
         run: |
-          for i in {1..10}; do
+          for i in {1..20}; do
             curl -sf http://localhost:3000/tasks && break || sleep 3
           done
+
+      - name: Prepare directory for ZAP results
+        run: mkdir -p zap-results
 
       - name: Run ZAP Baseline Scan with Docker
         run: |
           docker run --network host \
-            -v $(pwd):/zap/wrk/:rw \
+            -v $(pwd)/zap-results:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:3000 -r /zap/wrk/report.html || true
+            zap-baseline.py -t http://localhost:3000 -r /zap/wrk/zap-report.html || true
 
       - name: Upload ZAP HTML Report
         uses: actions/upload-artifact@v4.6.2
         with:
           name: zap-report
-          path: report.html
+          path: zap-results/zap-report.html
 
       - name: Tear down services
         run: docker compose down -v
