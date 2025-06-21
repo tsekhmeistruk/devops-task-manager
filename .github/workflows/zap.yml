@@ -41,15 +41,19 @@ jobs:
 
       - name: ZAP Scan - Backend API
         run: |
-          docker run --network host \
-            -v $(pwd)/zap-results:/zap/wrk/:rw \
+          docker run --rm --network host \
+            --user 0 \
+            -v $(pwd)/zap-results:/zap/wrk \
+            -w /zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:3000 -r zap-backend.html || true
 
       - name: ZAP Scan - Frontend UI
         run: |
-          docker run --network host \
-            -v $(pwd)/zap-results:/zap/wrk/:rw \
+          docker run --rm --network host \
+            --user 0 \
+            -v $(pwd)/zap-results:/zap/wrk \
+            -w /zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:5173 -r zap-frontend.html || true
 
