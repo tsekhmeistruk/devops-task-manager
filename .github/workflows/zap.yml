@@ -17,6 +17,31 @@ jobs:
       - name: Set up Docker Compose
         run: docker compose version
 
+      # Docker image cache: restore
+      - name: Restore cached ZAP Docker image
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.docker-cache
+          key: zap-docker-${{ runner.os }}-${{ hashFiles('.github/workflows/zap.yml') }}
+          restore-keys: |
+            zap-docker-${{ runner.os }}-
+
+      - name: Load ZAP image from cache if present
+        run: |
+          mkdir -p /tmp/.docker-cache
+          if [ -f /tmp/.docker-cache/zap.tar ]; then
+            echo "Loading ZAP image from cache..."
+            docker load -i /tmp/.docker-cache/zap.tar
+          fi
+
+      - name: Pull ZAP image if not cached
+        run: docker pull ghcr.io/zaproxy/zaproxy:stable
+
+      - name: Save ZAP image to cache
+        run: |
+          mkdir -p /tmp/.docker-cache
+          docker save ghcr.io/zaproxy/zaproxy:stable -o /tmp/.docker-cache/zap.tar
+
       - name: Create .env file from secrets
         run: |
           {
