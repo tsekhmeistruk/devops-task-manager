@@ -2,6 +2,9 @@ name: OWASP ZAP Scan
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/zap.yml"
 
 jobs:
   zap_scan:
