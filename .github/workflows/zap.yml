@@ -19,10 +19,12 @@ jobs:
 
       - name: Create .env file from secrets
         run: |
-          echo "PORT=3000" >> .env
-          echo "MONGODB_URI=mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@mongodb:27017/testdb?authSource=admin" >> .env
-          echo "MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_USER }}" >> .env
-          echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_PASS }}" >> .env
+          {
+            echo "PORT=3000"
+            echo "MONGODB_URI=mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@mongodb:27017/testdb?authSource=admin"
+            echo "MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_USER }}"
+            echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_PASS }}"
+          } > .env
 
       - name: Start target with Docker Compose
         run: docker compose up -d --build
@@ -30,7 +32,8 @@ jobs:
       - name: Wait for backend and frontend
         run: |
           for i in {1..20}; do
-            curl -sf http://localhost:3000/tasks && curl -sf http://localhost:5173 && break || sleep 3
+            curl -sf http://localhost:3000/tasks && curl -sf http://localhost:5173 && echo "Both services ready" && break
+            echo "Waiting for services..." && sleep 3
           done
 
       - name: Prepare directory for ZAP results
@@ -41,14 +44,14 @@ jobs:
           docker run --network host \
             -v $(pwd)/zap-results:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:3000 -r /zap-backend.html || true
+            zap-baseline.py -t http://localhost:3000 -r zap-backend.html || true
 
       - name: ZAP Scan - Frontend UI
         run: |
           docker run --network host \
             -v $(pwd)/zap-results:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:5173 -r /zap-frontend.html || true
+            zap-baseline.py -t http://localhost:5173 -r zap-frontend.html || true
 
       - name: Upload ZAP HTML Reports
         uses: actions/upload-artifact@v4.6.2
