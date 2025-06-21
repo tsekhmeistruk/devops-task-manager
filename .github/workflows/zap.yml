@@ -38,14 +38,14 @@ jobs:
           docker run --network host \
             -v $(pwd)/zap-results:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:3000 -r /zap/wrk/zap-backend.html || true
+            zap-baseline.py -t http://localhost:3000 -r /zap-backend.html || true
 
       - name: ZAP Scan - Frontend UI
         run: |
           docker run --network host \
             -v $(pwd)/zap-results:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:5173 -r /zap/wrk/zap-frontend.html || true
+            zap-baseline.py -t http://localhost:5173 -r /zap-frontend.html || true
 
       - name: Upload ZAP HTML Reports
         uses: actions/upload-artifact@v4.6.2
