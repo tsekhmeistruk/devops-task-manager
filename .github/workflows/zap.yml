@@ -17,20 +17,48 @@ jobs:
       - name: Set up Docker Compose
         run: docker compose version
 
+      # Docker image cache: restore
+      - name: Restore cached ZAP Docker image
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.docker-cache
+          key: zap-docker-${{ runner.os }}-${{ hashFiles('.github/workflows/zap.yml') }}
+          restore-keys: |
+            zap-docker-${{ runner.os }}-
+
+      - name: Load ZAP image from cache if present
+        run: |
+          mkdir -p /tmp/.docker-cache
+          if [ -f /tmp/.docker-cache/zap.tar ]; then
+            echo "Loading ZAP image from cache..."
+            docker load -i /tmp/.docker-cache/zap.tar
+          fi
+
+      - name: Pull ZAP image if not cached
+        run: docker pull ghcr.io/zaproxy/zaproxy:stable
+
+      - name: Save ZAP image to cache
+        run: |
+          mkdir -p /tmp/.docker-cache
+          docker save ghcr.io/zaproxy/zaproxy:stable -o /tmp/.docker-cache/zap.tar
+
       - name: Create .env file from secrets
         run: |
-          echo "PORT=3000" >> .env
-          echo "MONGODB_URI=mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@mongodb:27017/testdb?authSource=admin" >> .env
-          echo "MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_USER }}" >> .env
-          echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_PASS }}" >> .env
+          {
+            echo "PORT=3000"
+            echo "MONGODB_URI=mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@mongodb:27017/testdb?authSource=admin"
+            echo "MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_USER }}"
+            echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_PASS }}"
+          } > .env
 
       - name: Start target with Docker Compose
         run: docker compose up -d --build
 
       - name: Wait for backend and frontend
         run: |
-          for i in {1..20}; do
-            curl -sf http://localhost:3000/tasks && curl -sf http://localhost:5173 && break || sleep 3
+          for i in {1..40}; do
+            curl -sf http://localhost:3000/tasks && curl -sf http://localhost:5173 && echo "Both services ready" && break
+            echo "Waiting for services..." && sleep 3
           done
 
       - name: Prepare directory for ZAP results
@@ -38,17 +66,24 @@ jobs:
 
       - name: ZAP Scan - Backend API
         run: |
-          docker run --network host \
-            -v $(pwd)/zap-results:/zap/wrk/:rw \
+          docker run --rm --network host \
+            --user 0 \
+            -v $(pwd)/zap-results:/zap/wrk \
+            -w /zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:3000 -r /zap-backend.html || true
+            zap-baseline.py -t http://localhost:3000 -r zap-backend.html || true
 
       - name: ZAP Scan - Frontend UI
         run: |
-          docker run --network host \
-            -v $(pwd)/zap-results:/zap/wrk/:rw \
+          docker run --rm --network host \
+            --user 0 \
+            -v $(pwd)/zap-results:/zap/wrk \
+            -w /zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:5173 -r /zap-frontend.html || true
+            zap-baseline.py -t http://localhost:5173 -r zap-frontend.html || true
+
+      - name: Verify ZAP report files
+        run: ls -lh zap-results
 
       - name: Upload ZAP HTML Reports
         uses: actions/upload-artifact@v4.6.2
